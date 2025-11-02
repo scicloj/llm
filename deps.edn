@@ -1,10 +1,9 @@
 {
+ ; probbaly only supports Linux on CPU
  :deps {org.clojure/clojure {:mvn/version "1.12.2"}
         org.scicloj/noj {:mvn/version "2-beta18"}
-        com.microsoft.onnxruntime/onnxruntime {:mvn/version "1.22.0"}
         org.uncomplicate/diamond-onnxrt {:mvn/version "0.17.0"}
         org.uncomplicate/neanderthal-mkl {:mvn/version "0.57.1"}
-        org.bytedeco/mkl$linux-x86_64-redist {:mvn/version "2025.2-1.5.12"}
         io.github.clojure/tools.build {:mvn/version "0.10.11"}
         org.json/json {:mvn/version "20250517"}
         }
