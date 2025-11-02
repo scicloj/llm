@@ -1,6 +1,6 @@
 # llm
 
-# allows to ask questions to GPT2 in pure Clojure
+allows to ask questions to GPT2 in pure Clojure
 
 VERY DRAFT !!!
 
@@ -11,13 +11,14 @@ https://huggingface.co/onnxmodelzoo/gpt2-lm-head-bs-12
 
 - It only works with this model so far.
 
-- I tested it on CPU only
+- I tested it on **CPU** only
 
 - it requires that "deep diamond" works in your setup
    - might need changes in deps.edn
 
-- the provided devcontainer has it working
+- It is working in the provided **devcontainer** setup 
 
-- current 'deps.edn' probably only work on Linux + CPU
+- current 'deps.edn' probably only works on **Linux + CPU**
+  - the devcontainer uses ubuntu (noble), so this 'should' work out of    the box
 
 
