@@ -1,0 +1,29 @@
+{
+ :deps {org.clojure/clojure {:mvn/version "1.12.2"}
+        org.scicloj/noj {:mvn/version "2-beta18"}
+        com.microsoft.onnxruntime/onnxruntime {:mvn/version "1.22.0"}
+        org.uncomplicate/diamond-onnxrt {:mvn/version "0.17.0"}
+        org.uncomplicate/neanderthal-mkl {:mvn/version "0.57.1"}
+        org.bytedeco/mkl$linux-x86_64-redist {:mvn/version "2025.2-1.5.12"}
+        io.github.clojure/tools.build {:mvn/version "0.10.11"}
+        org.json/json {:mvn/version "20250517"}
+        }
+
+
+ :paths ["src" "notebooks" "classes" "resources"]
+ :mvn/repos {"maven-central-snapshots"
+             {:url "https://central.sonatype.com/repository/maven-snapshots"}}
+
+
+
+ :aliases
+ {:build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.3"}
+                 slipset/deps-deploy {:mvn/version "0.2.2"}}
+          :ns-default build}
+  :test {:extra-paths ["test"]
+         :extra-deps {io.github.cognitect-labs/test-runner
+                      {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+         :main-opts ["-m" "cognitect.test-runner"]
+         :exec-fn cognitect.test-runner.api/test}
+  :linux
+  {:jvm-opts ["-Dclojure.compiler.direct-linking=true" "--enable-native-access=ALL-UNNAMED"]}}}
