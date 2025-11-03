@@ -1,0 +1,11 @@
+[project]
+name = "onnx"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.13.*"
+dependencies = [
+    "onnxruntime==1.23.2",
+    "onnxruntime-extensions>=0.14.0",
+    "transformers>=4.57.1",
+]

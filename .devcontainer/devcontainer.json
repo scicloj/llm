@@ -7,13 +7,19 @@
 	"features": {
 		"ghcr.io/devcontainers/features/java:1": {"installMaven": "true"},
 		"ghcr.io/va-h/devcontainers-features/uv:1": {},
-		 "ghcr.io/devcontainers-extra/features/clojure-asdf:2": {}
+		 "ghcr.io/devcontainers-extra/features/clojure-asdf:2": {},
+		 "ghcr.io/devcontainers-extra/features/apt-get-packages:1": {"packages": "lib_mkl"}
+}
 	},
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"betterthantomorrow.calva",
-				"vscjava.vscode-java-pack"
+				"vscjava.vscode-java-pack",
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"ms-python.vscode-python-envs",
+				"ms-python.debugpy"
 			]
 		}
 	}

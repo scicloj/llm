@@ -1,17 +1,21 @@
-{
- ; probbaly only supports Linux on CPU
+{; probbaly only supports Linux on CPU
  :deps {org.clojure/clojure {:mvn/version "1.12.2"}
         org.scicloj/noj {:mvn/version "2-beta18"}
+        ;org.bytedeco/onnxruntime-platform {:mvn/version "13.0-9.14-1.5.13-SNAPSHOT"}
+        ;com.microsoft.onnxruntime/onnxruntime {:mvn/version "1.22.0"}
+        org.bytedeco/onnxruntime-platform  {:mvn/version "1.23.1-1.5.13-SNAPSHOT"}
         org.uncomplicate/diamond-onnxrt {:mvn/version "0.17.0"}
         org.uncomplicate/neanderthal-mkl {:mvn/version "0.57.1"}
+        org.bytedeco/mkl$linux-x86_64-redist {:mvn/version "2025.2-1.5.12"}
         io.github.clojure/tools.build {:mvn/version "0.10.11"}
-        org.json/json {:mvn/version "20250517"}
-        }
+        org.json/json {:mvn/version "20250517"}}
 
 
  :paths ["src" "notebooks" "classes" "resources"]
- :mvn/repos {"maven-central-snapshots"
-             {:url "https://central.sonatype.com/repository/maven-snapshots"}}
+ :mvn/repos {"maven-central-snapshots" {:url "https://central.sonatype.com/repository/maven-snapshots"}
+             "nexus snapshots"         {:url "https://oss.sonatype.org/content/repositories/snapshots"
+                                        :snapshots {:enabled true}}
+             }
 
 
 

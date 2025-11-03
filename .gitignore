@@ -11,3 +11,5 @@ classes
 .venv
 target
 classes
+models
+pom.xml
