@@ -1,4 +1,4 @@
-(ns dd-onnx
+(ns inference-gpt2
   (:require [uncomplicate.neanderthal.core :refer [transfer! iamax native]]
            [uncomplicate.neanderthal.block :refer [buffer]] 
            [uncomplicate.diamond
@@ -29,7 +29,7 @@
   
   (uc-co-core/with-release [env (onnxrt-internal/environment nil)
                             opt (onnxrt-internal/options)
-                            sess (onnxrt-internal/session env "gpt2-lm-head-bs-12.onnx" opt)
+                            sess (onnxrt-internal/session env "models/gpt2-lm-head-bs-12.onnx" opt)
 
                             mem-info (onnxrt-internal/memory-info :cpu :arena 0 :default)
 

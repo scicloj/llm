@@ -8,9 +8,9 @@
 		"ghcr.io/devcontainers/features/java:1": {"installMaven": "true"},
 		"ghcr.io/va-h/devcontainers-features/uv:1": {},
 		 "ghcr.io/devcontainers-extra/features/clojure-asdf:2": {},
-		 "ghcr.io/devcontainers-extra/features/apt-get-packages:1": {"packages": "lib_mkl"}
-}
-	},
+		 "ghcr.io/devcontainers-extra/features/apt-get-packages:1": {"packages": "intel-mkl,rlwrap"}
+    }
+	,
 	"customizations": {
 		"vscode": {
 			"extensions": [
