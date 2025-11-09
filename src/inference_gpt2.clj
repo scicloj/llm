@@ -80,12 +80,11 @@
                              max-tokens)
         ]
     (.decode gpt-2-tokenizer
-             (java.util.Arrays/asList (to-array (int-array (first answer))))))
+             (java.util.Arrays/asList (to-array (int-array (first answer)))))))
 
-  
-  )
+
 
 (def question "Berlin is the capital of ")
-(def answer (ask-gpt question 5))
+(def answer (ask-gpt question 1))
 (println :question question)
 (println :answer answer)

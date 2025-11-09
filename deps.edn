@@ -8,7 +8,9 @@
         org.uncomplicate/neanderthal-mkl {:mvn/version "0.57.1"}
         org.bytedeco/mkl$linux-x86_64-redist {:mvn/version "2025.2-1.5.12"}
         io.github.clojure/tools.build {:mvn/version "0.10.11"}
-        org.json/json {:mvn/version "20250517"}}
+        org.json/json {:mvn/version "20250517"}
+        clj-http/clj-http {:mvn/version "3.13.1"}
+        }
 
 
  :paths ["src" "notebooks" "classes" "resources"]
