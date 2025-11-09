@@ -3,7 +3,8 @@
         org.scicloj/noj {:mvn/version "2-beta18"}
         ;com.microsoft.onnxruntime/onnxruntime {:mvn/version "1.23.2"}
         org.bytedeco/onnxruntime-platform  {:mvn/version "1.23.1-1.5.13-SNAPSHOT"}
-        org.uncomplicate/diamond-onnxrt {:mvn/version "0.17.0"}
+        org.uncomplicate/diamond-onnxrt {:mvn/version "0.19.0-SNAPSHOT"}
+        
         org.uncomplicate/neanderthal-mkl {:mvn/version "0.57.1"}
         org.bytedeco/mkl$linux-x86_64-redist {:mvn/version "2025.2-1.5.12"}
         io.github.clojure/tools.build {:mvn/version "0.10.11"}
@@ -11,7 +12,8 @@
 
 
  :paths ["src" "notebooks" "classes" "resources"]
- :mvn/repos {"maven-central-snapshots" {:url "https://central.sonatype.com/repository/maven-snapshots"}
+ :mvn/repos {"maven-central-snapshots" {:url "https://central.sonatype.com/repository/maven-snapshots"
+                                        :snapshots {:enabled true}}
              "nexus snapshots"         {:url "https://oss.sonatype.org/content/repositories/snapshots"
                                         :snapshots {:enabled true}}
              }

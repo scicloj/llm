@@ -6,6 +6,7 @@ import tiktoken
 
 
 
+
  
 #model_name = "openai/gpt-oss-20b"
  
@@ -14,7 +15,7 @@ import tiktoken
 #test = tokenizer("what is AI ?")
 
 enc = tiktoken.get_encoding("o200k_harmony")
-ort_sess = ort.InferenceSession('models/gpt-oss-20b/cpu/model.onnx')
+ort_sess = ort.InferenceSession('models/gpt-oss-20b/cuda/model.onnx')
 
 # print([input.name for input in ort_sess.get_inputs()])
 # print([input.shape for input in ort_sess.get_inputs()])
@@ -36,7 +37,7 @@ def prompts_to_inputs(prompt):
 
   input_orts = [
 
-  ort.OrtValue.ortvalue_from_numpy(np.zeros([1,8,1,64]).astype(np.float32))  
+  ort.OrtValue.ortvalue_from_numpy(np.zeros([1,8,1,64]).astype(np.float16))  
       for i in range(48)
   ]
 
@@ -53,17 +54,23 @@ Reasoning: high
 # Valid channels: analysis, commentary, final. Channel must be included for every message.<|end|>
       <|start|>user<|message|>Which city is larger , Berlin or Rome ?<|end|>
       <|start|>assistant"""
-#prompt = "Who is Albert Einstein ?"
-for i in range(5):
+prompt = "How are you ?"
+for i in range(10):
   outputs = ort_sess.run(None, prompts_to_inputs(prompt))
-  last_token= outputs[0][0][outputs[0].shape[1]-1].argmax().item()
+  last_token_dist = outputs[0][0][outputs[0].shape[1]-1]
+  #print(np.sum(last_token_dist))
+  #print(last_token_dist)
+  last_token= last_token_dist.argmax().item()
   
   last_token_string = enc.decode([last_token])
   prompt += last_token_string
-  print("ouput: " +
-        str(outputs[0][0][outputs[0].shape[1]-1][0:5]) + 
+  print("output: " +
+        str(last_token_dist) + 
         " : " + str(last_token) + 
         " : " + enc.decode([last_token]))
+  print(prompt)
   if last_token==200002:
     break;
 
+
+np.reshape

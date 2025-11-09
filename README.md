@@ -24,3 +24,6 @@ VERY DRAFT !!!
   - the devcontainer uses ubuntu (noble), so this 'should' work out of    the box
 
 
+
+# devcontainer
+uvx --from huggingface-hub hf 
