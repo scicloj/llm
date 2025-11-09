@@ -88,3 +88,6 @@
 (def answer (ask-gpt question 1))
 (println :question question)
 (println :answer answer)
+
+
+
