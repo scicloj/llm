@@ -2,13 +2,15 @@
   (:require
    [clj-http.client :as http]
    [clojure.java.io :refer [output-stream]]
-   [clojure.string :as str])
+   [clojure.string :as str]
+   [clojure.java.io :as io]
+   )
   (:import
    (org.apache.commons.io.input CountingInputStream)))
 
 
 
-(defn print-progress-bar
+(defn- print-progress-bar
   "Render a simple progress bar given the progress and total. If the total is zero
    the progress will run as indeterminated."
   ([progress total] (print-progress-bar progress total {}))
@@ -28,7 +30,7 @@
        (print (str "[" (render-bar) "] "
                    progress "/?"))))))
 
-(defn insert-at
+(defn- insert-at
   "Addes value into a vector at an specific index."
   [v idx val]
 
@@ -36,7 +38,7 @@
       (conj val)
       (into (subvec v idx))))
 
-(defn insert-after
+(defn- insert-after
   "Finds an item into a vector and adds val just after it.
    If needle is not found, the input vector will be returned."
   [v needle val]
@@ -45,7 +47,7 @@
       v
       (insert-at v (inc index) val))))
 
-(defn wrap-downloaded-bytes-counter
+(defn- wrap-downloaded-bytes-counter
   "Middleware that provides an CountingInputStream wrapping the stream output"
   [client]
   (fn [req]
@@ -55,7 +57,7 @@
       (merge resp {:body                     counter
                    :downloaded-bytes-counter counter}))))
 
-(defn download-with-progress [url target authorization-token]
+(defn- download-with-progress [url target authorization-token]
   (http/with-middleware
     (-> http/default-middleware
         ;(insert-after http/wrap-redirects wrap-downloaded-bytes-counter)
@@ -82,8 +84,6 @@
 
                 (when (or (zero? num-calls)
                           (= 0 (mod num-calls 1000)))
-                  
-
                   (print-progress-bar
                    (if (some? counter)
                      (Math/round (/ (.getByteCount counter) 1.0))
@@ -113,10 +113,10 @@
     (run!
      (fn [{:keys [type path]}]
        (case type
-         "directory" (clojure.java.io/make-parents (format "%s/%s" model-base-dir path))
+         "directory" (io/make-parents (format "%s/%s" model-base-dir path))
          "file"
          (do
-           (clojure.java.io/make-parents (format "%s/%s" model-base-dir path))
+           (io/make-parents (format "%s/%s" model-base-dir path))
            (download-with-progress (format "https://huggingface.co/%s/%s/resolve/main/%s" model-namespace model-repo path)
                                    (format "%s/%s" model-base-dir path)
                                    authorization-token))))
