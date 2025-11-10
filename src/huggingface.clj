@@ -48,14 +48,14 @@
                               :headers {"Authorization"
                                         (format "Bearer %s" authorization-token)}})
 
-          length (Integer. (get-in response [:headers "content-length"] Integer/MAX_VALUE))
+          length (Long. (get-in response [:headers "content-length"] 0))
           buffer-size (* 1024 1024)
           progress (atom 0)]
 
       
       (progress.determinate/animate!
        progress
-       :opts {:total (/ length 1024 1024)
+       :opts {:total (int (/ length 1024 1024))
               :redraw-rate 60 ; Use 60 fps for the demo
               :style spinner-style
               :label path
@@ -72,7 +72,7 @@
              (let [size (.read input buffer)]
                (when (pos? size)
                  (.write output buffer 0 size)
-                 (reset! progress (/ (.getByteCount counter) 1024 1024))
+                 (reset! progress (int (/ (.getByteCount counter) 1024 1024)))
                  (recur)))))))
       )))
 
@@ -115,10 +115,14 @@
       model-files))))
 
 (comment
+  
   (jansi-clj.core/erase-screen!)
   
+  
+  
   (download-onnx-model-dir!  "/tmp/models"
-                             "onnx-community/tiny-random-LlamaForCausalLM-ONNX"
-                             "<token>")
-  )  
+                             "nvidia/Gemma-2b-it-ONNX-INT4"
+                             (slurp "auth.txt"))
+  )
+    
 
