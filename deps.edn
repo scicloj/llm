@@ -36,4 +36,6 @@
          :main-opts ["-m" "cognitect.test-runner"]
          :exec-fn cognitect.test-runner.api/test}
   :linux
-  {:jvm-opts ["-Dclojure.compiler.direct-linking=true" "--enable-native-access=ALL-UNNAMED"]}}}
+  {:jvm-opts ["-Dclojure.compiler.direct-linking=true" "--enable-native-access=ALL-UNNAMED"
+              "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+              ]}}}
