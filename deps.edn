@@ -1,7 +1,7 @@
 {; probbaly only supports Linux on CPU
  :deps {org.clojure/clojure {:mvn/version "1.12.2"}
         org.scicloj/noj {:mvn/version "2-beta18"}
-        ;com.microsoft.onnxruntime/onnxruntime {:mvn/version "1.23.2"}
+        com.microsoft.onnxruntime/onnxruntime {:mvn/version "1.23.2"}
         org.bytedeco/onnxruntime-platform  {:mvn/version "1.23.1-1.5.13-SNAPSHOT"}
         org.uncomplicate/diamond-onnxrt {:mvn/version "0.19.0-SNAPSHOT"}
         
@@ -11,6 +11,9 @@
         org.json/json {:mvn/version "20250517"}
         clj-http/clj-http {:mvn/version "3.13.1"}
         com.github.pmonks/spinner {:mvn/version "2.0.292"}
+        ai.djl.huggingface/tokenizers {:mvn/version "0.34.0"}
+
+        
         }
 
 

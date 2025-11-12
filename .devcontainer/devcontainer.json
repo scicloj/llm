@@ -25,7 +25,7 @@
 	},
 
 	"mounts": [
-  "source=/mnt/extHDD/hf-models/,target=/hf-models,type=bind,consistency=cached"
+  "source=/media/xfs/hf-models/,target=/hf-models,type=bind,consistency=cached"
 ]
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},

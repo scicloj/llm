@@ -15,7 +15,7 @@ import tiktoken
 #test = tokenizer("what is AI ?")
 
 enc = tiktoken.get_encoding("o200k_harmony")
-ort_sess = ort.InferenceSession('models/gpt-oss-20b/cuda/model.onnx')
+ort_sess = ort.InferenceSession('/hf-models/gpt-oss-20b/cuda/model.onnx')
 
 # print([input.name for input in ort_sess.get_inputs()])
 # print([input.shape for input in ort_sess.get_inputs()])

@@ -8,7 +8,8 @@
    [jansi-clj.core]
    )
   (:import
-   (org.apache.commons.io.input CountingInputStream)))
+   (org.apache.commons.io.input CountingInputStream)
+   ))
 
 
 (def spinner-style 
@@ -114,15 +115,21 @@
           ))
       model-files))))
 
+
+
 (comment
+  
   
   (jansi-clj.core/erase-screen!)
   
   
   
-  (download-onnx-model-dir!  "/tmp/models"
+  
+  
+  (download-onnx-model-dir!  "/hf-models"
                              "nvidia/Gemma-2b-it-ONNX-INT4"
                              (slurp "auth.txt"))
   )
+  
     
 

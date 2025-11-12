@@ -21,7 +21,6 @@
             [clojure.tools.build.api :as b])
   (:import [ai.onnxruntime.platform Fp16Conversions]
            [ai.onnxruntime OrtUtil]))
-
 (def basis (delay (b/create-basis {:project "deps.edn"})))
 
 (b/javac {:src-dirs ["java"]
