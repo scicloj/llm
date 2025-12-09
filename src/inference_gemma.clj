@@ -13,8 +13,6 @@
    [ai.onnxruntime.platform Fp16Conversions]))
 
 
-
-
 (defn prompt->input-ids [^HuggingFaceTokenizer tokenizer ^String prompt]
   (seq
    (.. tokenizer
@@ -22,7 +20,7 @@
        getIds)))
 
 (defn generate-new-token
-  "Take a list of tokens, and generaes the next one"
+  "Take a list of tokens, and generate the next one"
   [input-ids sess mem-info]
 
   (with-release
@@ -74,16 +72,6 @@
      (infer! my-binding)
 
 
-     value-info
-     (->
-      (bound-values outputs)
-      first
-      value
-      info)
-
-     _ (println :logits-info value-info)
-
-
      logits
      (->
       (bound-values outputs)
@@ -131,12 +119,12 @@
 
 ;; The following assumes tis model being accessible on local disk
 ;; it can be downloaded via
-;;(huggingface/download-onnx-model-dir!  "/hf-models"
+;;(huggingface/download-onnx-model-dir!  "/tmp/hf-models"
 ;;                             "nvidia/Gemma-2b-it-ONNX-INT4"
 ;;                             <hugging-face-token>)
 
-(defn complete [{:keys [prompt max-tokens]}]
-  (with-release [models-base-dir "/hf-models"
+(defn complete! [{:keys [prompt max-tokens]}]
+  (with-release [models-base-dir "/tmp/hf-models"
                  model-folder "nvidia/Gemma-2b-it-ONNX-INT4"
                  model-dir (format "%s/%s" models-base-dir model-folder)
                  tokenizer (-> "file:%s"
@@ -151,5 +139,12 @@
                  sess (onnxrt-internal/session env model-file opt)]
     (stream-completion prompt max-tokens tokenizer sess mem-info println)))
 
-
+(comment
+  (download-onnx-model-dir!  "/tmp//hf-models"
+                             "nvidia/Gemma-2b-it-ONNX-INT4"
+                             ;(slurp "auth.txt")
+                             "<<huggingfcae-token>>"
+                             )
+  (complete! "What is AI ?" 100 )
+  )
 

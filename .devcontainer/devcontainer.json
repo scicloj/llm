@@ -5,28 +5,33 @@
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/base:noble",
 	"features": {
-		"ghcr.io/devcontainers/features/java:1": {"installMaven": "true"},
-		"ghcr.io/va-h/devcontainers-features/uv:1": {},
-		 "ghcr.io/devcontainers-extra/features/clojure-asdf:2": {},
-		 "ghcr.io/devcontainers-extra/features/apt-get-packages:1": {"packages": "intel-mkl,rlwrap"}
-    }
-	,
+		"ghcr.io/devcontainers-extra/features/apt-get-packages:1": {},
+		"ghcr.io/devcontainers-extra/features/clojure-asdf:2": {},
+		"ghcr.io/devcontainers-extra/features/leiningen-sdkman:2": {},
+		"ghcr.io/devcontainers-extra/features/maven-sdkman:2": {},
+		"ghcr.io/va-h/devcontainers-features/uv:1": {}
+	},
+	"runArgs": 
+	    [ 
+		"--device", "nvidia.com/gpu=all"   // working on nixos
+		//"--runtime", "nvidia", "--gpus", "all"], //working in codevm
+		],
+		
+	"mounts": [
+  "source=/mnt/extHDD/hf-models/,target=/hf-models,type=bind,consistency=cached"
+	],
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"betterthantomorrow.calva",
-				"vscjava.vscode-java-pack",
-				"ms-python.python",
-				"ms-python.vscode-pylance",
-				"ms-python.vscode-python-envs",
-				"ms-python.debugpy"
+				"betterthantomorrow.calva"
 			]
 		}
-	},
+	}
+		
+ //"onCreateCommand": 
+ //"wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb && sudo dpkg -i cuda-keyring_1.1-1_all.deb && wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-ubuntu2404.pin && sudo mv cuda-ubuntu2404.pin /etc/apt/preferences.d/cuda-repository-pin-600 && sudo apt-get update && sudo apt-get install -y cuda-toolkit-13"
+// && sudo apt-get update && sudo apt-get install -y cuda-toolkit cudnn
 
-	"mounts": [
-  "source=/media/xfs/hf-models/,target=/hf-models,type=bind,consistency=cached"
-]
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
