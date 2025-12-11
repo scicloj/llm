@@ -23,7 +23,8 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"betterthantomorrow.calva"
+				"betterthantomorrow.calva",
+				"ms-python.python"
 			]
 		}
 	}

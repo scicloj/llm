@@ -6,7 +6,8 @@
    [uncomplicate.commons.core :refer [with-release]]
    [uncomplicate.diamond.internal.onnxrt.core :refer :all]
    [fastmath.vector :as v]
-   [fastmath.matrix :as mat])
+   [fastmath.matrix :as mat]
+   [uncomplicate.clojurecuda.core])
   (:import
    [ai.djl.huggingface.tokenizers HuggingFaceTokenizer]))
 
@@ -22,8 +23,8 @@
                  position-ids (onnx-tensor mem-info [1 len-input] (long-pointer (range len-input)))
                  attention-mask (onnx-tensor mem-info [1 len-input] (long-pointer (repeat len-input 1)))
                  past-key-values (vec (repeatedly 60 #(onnx-tensor mem-info [1 3 0 64] (zero! (float-pointer 192)))))
-                 present-key-values (vec (repeatedly 60 #(onnx-tensor mem-info [1 3  len-input 64] (zero! (float-pointer (* 3 (inc len-input) 64))))))
-                 logits (onnx-tensor mem-info [1   len-input 49152] (float-pointer (*   len-input 49152)))
+                 present-key-values (vec (repeatedly 60 #(onnx-tensor mem-info [1 3 len-input 64] (zero! (float-pointer (* 3 (inc len-input) 64))))))
+                 logits (onnx-tensor mem-info [1 len-input 49152] (float-pointer (* len-input 49152)))
                  data-binding (io-binding sess
                                           {"attention_mask" attention-mask
                                            "input_ids" input-ids
@@ -157,8 +158,6 @@
       (v/array-vec (pointer-vec (capacity! (float-pointer (mutable-data first-bound-value)) (* len-input 49152)))))))
 
 
-(defn argmax [seq]
-  (apply max-key second (map-indexed vector seq)))
 
 (def tokenizer (HuggingFaceTokenizer/newInstance (.toPath (io/file "/hf-models/HuggingFaceTB/SmolLM-135M"))))
 
@@ -189,7 +188,7 @@
   (with-release
     [env (environment :warning "test" nil)
      opt (-> (options)
-             (append-provider! :dnnl)
+             (append-provider! :cuda)
              (override-dimension! "batch_size" 1)
                             ;(override-dimension! "sequence_length"  len-input)
                             ;(override-dimension! "past_sequence_length" len-input)
@@ -208,8 +207,8 @@
 
 
 (do
-  (let [answer (generate "Germany is" 20
-                         (fn [_prompt] (print ".") (flush)))]
+  (let [answer (generate "Tell me a story about the hobbits.\n" 10
+                         (fn [prompt] (println prompt) (flush)))]
     (println)
     (println "------------------")
     (println answer)))

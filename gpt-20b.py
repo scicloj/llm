@@ -5,17 +5,19 @@ import tiktoken
 
 
 
+tokenizer = AutoTokenizer.from_pretrained("/hf-models/HuggingFaceTB/SmolLM-135M")
+ort_sess = ort.InferenceSession('/hf-models/gpt-oss-20b/cuda/model.onnx')
+
 
 
  
 #model_name = "openai/gpt-oss-20b"
  
-#tokenizer = AutoTokenizer.from_pretrained(model_name)
+
 
 #test = tokenizer("what is AI ?")
 
 enc = tiktoken.get_encoding("o200k_harmony")
-ort_sess = ort.InferenceSession('/hf-models/gpt-oss-20b/cuda/model.onnx')
 
 # print([input.name for input in ort_sess.get_inputs()])
 # print([input.shape for input in ort_sess.get_inputs()])
