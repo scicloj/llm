@@ -7,7 +7,6 @@ path_to_model = "/hf-models/onnx-community/gemma-3-1b-it-ONNX"
 config = AutoConfig.from_pretrained(path_to_model)
 tokenizer = AutoTokenizer.from_pretrained(path_to_model)
 
-decoder_session = onnxruntime.InferenceSession(f"{path_to_model}/onnx/model.onnx")
 
 ## Set config values
 num_key_value_heads = config.num_key_value_heads
@@ -24,7 +23,13 @@ messages = [
 
 ## Apply tokenizer
 inputs = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=True, return_dict=True, return_tensors="np")
-print(inputs)
+print(inputs.input_ids)
+
+
+#load model
+decoder_session = onnxruntime.InferenceSession(f"{path_to_model}/onnx/model.onnx")
+
+
 ## Prepare decoder inputs
 batch_size = inputs['input_ids'].shape[0]
 past_key_values = {

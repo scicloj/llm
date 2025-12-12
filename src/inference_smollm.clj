@@ -4,7 +4,7 @@
    [uncomplicate.clojure-cpp
     :refer [capacity! float-pointer long-pointer pointer-vec zero!]]
    [uncomplicate.commons.core :refer [with-release]]
-   [uncomplicate.diamond.internal.onnxrt.core :refer :all]
+   [uncomplicate.diamond.internal.onnxrt.core :refer [append-provider! bound-values environment input-type-info io-binding memory-info mutable-data onnx-tensor options output-type-info override-dimension! runner* session]]
    [fastmath.vector :as v]
    [fastmath.matrix :as mat]
    [uncomplicate.clojurecuda.core])

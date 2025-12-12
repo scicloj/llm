@@ -1,4 +1,4 @@
-(ns inference-gemma
+(ns inference2-gemma
   (:require
    [tech.v3.datatype.argops]
    [uncomplicate.clojure-cpp
