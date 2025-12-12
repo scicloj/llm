@@ -28,101 +28,102 @@
 (def head-dim 256)
 (def num-hidden-layers 26)
 
-(with-release [mem-info (onnxrt-internal/memory-info :cpu :arena 0 :default)
-               env (onnxrt-internal/environment :warning "test" nil)
-               opt (-> (onnxrt-internal/options)
-                       (onnxrt-internal/append-provider! :cuda)
+(defn infer! []
+  (with-release [mem-info (onnxrt-internal/memory-info :cpu :arena 0 :default)
+                 env (onnxrt-internal/environment :warning "test" nil)
+                 opt (-> (onnxrt-internal/options)
+                         (onnxrt-internal/append-provider! :cuda)
          ;(override-dimension! "batch_size" 1)
                             ;(override-dimension! "sequence_length"  len-input)
                             ;(override-dimension! "past_sequence_length" len-input)
                             ;(override-dimension! "past_sequence_length + 1" (inc len-input))
                             ;(graph-optimization! :extended)
-                       )
-               sess (onnxrt-internal/session env "/hf-models/onnx-community/gemma-3-1b-it-ONNX/onnx/model.onnx" opt)
+                         )
+                 sess (onnxrt-internal/session env "/hf-models/onnx-community/gemma-3-1b-it-ONNX/onnx/model.onnx" opt)
 
-               past-key-values
-               (into {}
-                     (for [layer (range num-hidden-layers)
-                           kv ["key" "value"]]
-                       [(format "past_key_values.%s.%s" layer kv)
-                        (onnxrt-internal/onnx-tensor mem-info [batch-size num-key-value-heads 0 head-dim]
-                                                     (zero! (float-pointer 0)))]))
+                 past-key-values
+                 (into {}
+                       (for [layer (range num-hidden-layers)
+                             kv ["key" "value"]]
+                         [(format "past_key_values.%s.%s" layer kv)
+                          (onnxrt-internal/onnx-tensor mem-info [batch-size num-key-value-heads 0 head-dim]
+                                                       (zero! (float-pointer 0)))]))
 
-               len-input (-> input-ids first count)
-               present-key-values
-               (into {}
-                     (for [layer (range  num-hidden-layers)
-                           kv ["key" "value"]]
-                       [(format "present.%s.%s" layer kv)
-                        (onnxrt-internal/onnx-tensor mem-info [batch-size
-                                                               num-key-value-heads
-                                                               len-input
-                                                               head-dim]
-                                                     (zero! (float-pointer
-                                                             (* batch-size
-                                                                num-key-value-heads
-                                                                len-input
-                                                                head-dim))))]))
-               position-ids (range 1 (inc len-input))
-               in-binding
-               (assoc past-key-values
-                      "input_ids" (onnxrt-internal/onnx-tensor
-                                   mem-info
-                                   [1 len-input]
-                                   (long-pointer (-> input-ids first long-array)))
-                      "position_ids" (onnxrt-internal/onnx-tensor
-                                      mem-info
-                                      [1 len-input]
-                                      (long-pointer (-> position-ids long-array))))
-
-
-               out-binding
-               (assoc present-key-values
-                      "logits" (onnxrt-internal/onnx-tensor
-                                mem-info
-                                [1 len-input 262144]
-                                (float-pointer (* len-input 262144))))
+                 len-input (-> input-ids first count)
+                 present-key-values
+                 (into {}
+                       (for [layer (range  num-hidden-layers)
+                             kv ["key" "value"]]
+                         [(format "present.%s.%s" layer kv)
+                          (onnxrt-internal/onnx-tensor mem-info [batch-size
+                                                                 num-key-value-heads
+                                                                 len-input
+                                                                 head-dim]
+                                                       (zero! (float-pointer
+                                                               (* batch-size
+                                                                  num-key-value-heads
+                                                                  len-input
+                                                                  head-dim))))]))
+                 position-ids (range 1 (inc len-input))
+                 in-binding
+                 (assoc past-key-values
+                        "input_ids" (onnxrt-internal/onnx-tensor
+                                     mem-info
+                                     [1 len-input]
+                                     (long-pointer (-> input-ids first long-array)))
+                        "position_ids" (onnxrt-internal/onnx-tensor
+                                        mem-info
+                                        [1 len-input]
+                                        (long-pointer (-> position-ids long-array))))
 
 
-               data-binding
-               (onnxrt-internal/io-binding sess in-binding out-binding)
+                 out-binding
+                 (assoc present-key-values
+                        "logits" (onnxrt-internal/onnx-tensor
+                                  mem-info
+                                  [1 len-input 262144]
+                                  (float-pointer (* len-input 262144))))
 
 
-               next! (onnxrt-internal/runner* sess)]
+                 data-binding
+                 (onnxrt-internal/io-binding sess in-binding out-binding)
 
-  (next! data-binding)
-  
+
+                 next! (onnxrt-internal/runner* sess)]
+
+    (next! data-binding)
+
 
     (let [logits-vec
-                 (v/array-vec
-                  (pointer-vec (capacity! (float-pointer (mutable-data (first (bound-values data-binding))))
-                                          (* len-input 262144))))
-                 last-logit
-                 (v/array-vec
-                  (last
-                   (partition 262144 logits-vec)))
-                 first-five (v/array-vec (take 5 last-logit))
+          (v/array-vec
+           (pointer-vec (capacity! (float-pointer (mutable-data (first (bound-values data-binding))))
+                                   (* len-input 262144))))
+          last-logit
+          (v/array-vec
+           (last
+            (partition 262144 logits-vec)))
+          first-five (v/array-vec (take 5 last-logit))
                  last-five (v/array-vec (take-last 5 last-logit))]
-
+          
     (println :logits-vec (take 10 logits-vec))
-
+        
     (println :first-bound-value (count logits-vec))
 
     (println first-five)
 
     (println last-five)
+      
+      (assert (v/edelta-eq  (v/array-vec [-17.110178 , -11.298628 ,   1.2429764, -18.418331 ,  -4.9682384])
+                            first-five
+                            0.001)
+              (str "unexpeced first-five: "  first-five))
 
-    (assert (v/edelta-eq  (v/array-vec [-17.110178 , -11.298628 ,   1.2429764, -18.418331 ,  -4.9682384])
-                          first-five
-                          0.001)
-            (str "unexpeced first-five: "  first-five))
+      (assert (v/edelta-eq  (v/array-vec [-18.370398, -18.326473, -18.303009, -18.506184, -18.182766])
+                            last-five
+                            0.001)
+              (str "unexpeced last-five: "  last-five))
 
-    (assert (v/edelta-eq  (v/array-vec [-18.370398, -18.326473, -18.303009, -18.506184, -18.182766])
-                          last-five
-                          0.001)
-            (str "unexpeced last-five: "  last-five))
+      (println :next-token-id (v/maxdim last-logit))
+    (assert (= 19058 (v/maxdim last-logit))))))
 
-    (println :next-token-id (v/maxdim last-logit))
-    (assert (= 19058 (v/maxdim last-logit)))))
-
-
+(infer!)
