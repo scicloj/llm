@@ -3,11 +3,12 @@
    [tech.v3.datatype.argops]
    [uncomplicate.clojure-cpp
     :refer [get-entry long-pointer pointer-pointer pointer-pointer
-            short-pointer zero! float-pointer]]
+            short-pointer zero! float-pointer capacity! pointer-vec]]
    [uncomplicate.commons.core :as uc-co-core :refer [info with-release]]
    [uncomplicate.diamond.internal.onnxrt.constants]
    [uncomplicate.diamond.internal.onnxrt.core :refer [bound-values mutable-data value] :as onnxrt-internal]
-   [uncomplicate.diamond.native])
+   [uncomplicate.diamond.native]
+   [fastmath.vector :as v])
   (:import
    [ai.djl.huggingface.tokenizers HuggingFaceTokenizer]
    [ai.onnxruntime.platform Fp16Conversions]))
@@ -20,7 +21,7 @@
 
 (def attention-mask [[1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]])
 
-(def batch-size (count tokens))
+(def batch-size (count input-ids))
 
 (def num-key-value-heads 1)
 
@@ -40,7 +41,7 @@
 
 (def past-key-values
   (into {}
-        (for [layer (range (+ 4 num-hidden-layers))
+        (for [layer (range num-hidden-layers)
               kv ["key" "value"]]
           [(format "past_key_values.%s.%s" layer kv)
            (onnxrt-internal/onnx-tensor mem-info [batch-size num-key-value-heads 0 head-dim]
@@ -52,12 +53,12 @@
 (def len-input (-> input-ids first count))
 (def present-key-values
   (into {}
-        (for [layer (range (+ 4 num-hidden-layers))
+        (for [layer (range  num-hidden-layers)
               kv ["key" "value"]]
           [(format "present.%s.%s" layer kv)
            (onnxrt-internal/onnx-tensor mem-info [batch-size
                                                   num-key-value-heads
-                                                  (-> input-ids first count)
+                                                  len-input
                                                   head-dim]
                                         (zero! (float-pointer
                                                 (* batch-size
@@ -70,32 +71,63 @@
 (def position-ids (range 1 (inc len-input)))
 (def in-binding
   (assoc past-key-values
-         "attention_mask" (onnxrt-internal/onnx-tensor mem-info [1 len-input] (long-pointer (-> attention-mask first long-array)))
+         ;"attention_mask" (onnxrt-internal/onnx-tensor mem-info [1 len-input] (long-pointer (-> attention-mask first long-array)))
          "input_ids" (onnxrt-internal/onnx-tensor mem-info [1 len-input] (long-pointer (-> input-ids first long-array)))
          "position_ids" (onnxrt-internal/onnx-tensor mem-info [1 len-input] (long-pointer (-> position-ids long-array)))))
 (def out-binding
   (assoc present-key-values
          "logits" (onnxrt-internal/onnx-tensor mem-info [1 len-input 262144] (float-pointer (* len-input 262144)))))
+
+
 (def data-binding
   (onnxrt-internal/io-binding sess in-binding out-binding))
 
+
 (def next! (onnxrt-internal/runner* sess))
 
-(next! data-binding)
 
-(comment 
-  (sort (keys in-binding))
-  
-  ;;=> ("attention_mask" "input_ids" "past_key_values.0.key" "past_key_values.0.value" "past_key_values.1.key" "past_key_values.1.value" "past_key_values.10.key" "past_key_values.10.value" "past_key_values.11.key" "past_key_values.11.value" "past_key_values.12.key" "past_key_values.12.value" "past_key_values.13.key" "past_key_values.13.value" "past_key_values.14.key" "past_key_values.14.value" "past_key_values.15.key" "past_key_values.15.value" "past_key_values.16.key" "past_key_values.16.value" "past_key_values.17.key" "past_key_values.17.value" "past_key_values.18.key" "past_key_values.18.value" "past_key_values.19.key" "past_key_values.19.value" "past_key_values.2.key" "past_key_values.2.value" "past_key_values.20.key" "past_key_values.20.value" "past_key_values.21.key" "past_key_values.21.value" "past_key_values.22.key" "past_key_values.22.value" "past_key_values.23.key" "past_key_values.23.value" "past_key_values.24.key" "past_key_values.24.value" "past_key_values.25.key" "past_key_values.25.value" "past_key_values.3.key" "past_key_values.3.value" "past_key_values.4.key" "past_key_values.4.value" "past_key_values.5.key" "past_key_values.5.value" "past_key_values.6.key" "past_key_values.6.value" "past_key_values.7.key" "past_key_values.7.value" "past_key_values.8.key" "past_key_values.8.value" "past_key_values.9.key" "past_key_values.9.value" "position_ids")
-  
-  (sort (onnxrt-internal/input-name sess))
-  
-  ;;=> ("attention_mask" "input_ids" "past_key_values.0.key" "past_key_values.0.value" "past_key_values.1.key" "past_key_values.1.value" "past_key_values.10.key" "past_key_values.10.value" "past_key_values.11.key" "past_key_values.11.value" "past_key_values.12.key" "past_key_values.12.value" "past_key_values.13.key" "past_key_values.13.value" "past_key_values.14.key" "past_key_values.14.value" "past_key_values.15.key" "past_key_values.15.value" "past_key_values.16.key" "past_key_values.16.value" "past_key_values.17.key" "past_key_values.17.value" "past_key_values.18.key" "past_key_values.18.value" "past_key_values.19.key" "past_key_values.19.value" "past_key_values.2.key" "past_key_values.2.value" "past_key_values.20.key" "past_key_values.20.value" "past_key_values.21.key" "past_key_values.21.value" "past_key_values.22.key" "past_key_values.22.value" "past_key_values.23.key" "past_key_values.23.value" "past_key_values.24.key" "past_key_values.24.value" "past_key_values.25.key" "past_key_values.25.value" "past_key_values.26.key" "past_key_values.26.value" "past_key_values.27.key" "past_key_values.27.value" "past_key_values.28.key" "past_key_values.28.value" "past_key_values.29.key" "past_key_values.29.value" "past_key_values.3.key" "past_key_values.3.value" "past_key_values.4.key" "past_key_values.4.value" "past_key_values.5.key" "past_key_values.5.value" "past_key_values.6.key" "past_key_values.6.value" "past_key_values.7.key" "past_key_values.7.value" "past_key_values.8.key" "past_key_values.8.value" "past_key_values.9.key" "past_key_values.9.value" "position_ids")
-  
-
-  (keys out-binding)
-  
+(println
+ :next
+ (next! data-binding))
 
 
-  (onnxrt-internal/output-name sess)
-  )
+
+(println
+ :wip
+ (float-pointer (mutable-data (first (bound-values data-binding)))))
+
+(def logits-vec
+  (v/array-vec
+   (pointer-vec (capacity! (float-pointer (mutable-data (first (bound-values data-binding))))
+                           (* len-input 262144)))))
+
+(println :logits-vec (take 10 logits-vec))
+
+(println
+ :first-bound-value
+ (count logits-vec))
+
+(def last-logit
+  (v/array-vec
+   (last
+    (partition 262144 logits-vec))))
+
+(def first-five (v/array-vec (take 5 last-logit)))
+(println first-five)
+(def last-five (v/array-vec (take-last 5 last-logit)))
+(println last-five)
+
+(assert (v/edelta-eq  (v/array-vec [-17.110178 , -11.298628 ,   1.2429764, -18.418331 ,  -4.9682384])
+                      first-five
+                      0.001)
+        (str "unexpeced first-five: "  first-five))
+
+(assert (v/edelta-eq  (v/array-vec [-18.370398, -18.326473, -18.303009, -18.506184, -18.182766])
+                      last-five
+                      0.001)
+        (str "unexpeced last-five: "  last-five))
+
+(print :next-token-id (v/maxdim last-logit))
+(assert (= 19058 (v/maxdim last-logit)))
+
+

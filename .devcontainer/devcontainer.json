@@ -11,14 +11,20 @@
 		"ghcr.io/devcontainers-extra/features/maven-sdkman:2": {},
 		"ghcr.io/va-h/devcontainers-features/uv:1": {}
 	},
+	"containerEnv": {
+       "UV_CACHE_DIR": "/uv_cache_dir",
+	   "HF_MODELS_FOLDER": "/hf-models"
+
+    },
 	"runArgs": 
 	    [ 
-		"--device", "nvidia.com/gpu=all"   // working on nixos
-		//"--runtime", "nvidia", "--gpus", "all"], //working in codevm
+		//"--device", "nvidia.com/gpu=all"   // working on nixos
+		"--runtime=nvidia", "--gpus", "all"] //working in codevm
 		],
 		
-	"mounts": [
-  "source=/mnt/extHDD/hf-models/,target=/hf-models,type=bind,consistency=cached"
+   "mounts": [
+  "source=${localEnv:HF_MODELS_FOLDER:/media/xfs/hf-models},target=/hf-models,type=bind,consistency=cached",
+  "source=${localEnv:UV_CACHE_DIR},target=/uv_cache_dir,type=bind,consistency=cached"
 	],
 	"customizations": {
 		"vscode": {
@@ -27,9 +33,9 @@
 				"ms-python.python"
 			]
 		}
-	}
+	},
 		
- //"onCreateCommand": 
+ "postCreateCommand": ["/home/vscode/.asdf/shims/clojure", "-P", "-Sthreads", "1"]
  //"wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb && sudo dpkg -i cuda-keyring_1.1-1_all.deb && wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-ubuntu2404.pin && sudo mv cuda-ubuntu2404.pin /etc/apt/preferences.d/cuda-repository-pin-600 && sudo apt-get update && sudo apt-get install -y cuda-toolkit-13"
 // && sudo apt-get update && sudo apt-get install -y cuda-toolkit cudnn
 
