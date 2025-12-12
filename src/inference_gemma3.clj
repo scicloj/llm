@@ -90,27 +90,19 @@
 
                next! (onnxrt-internal/runner* sess)]
 
+  (next! data-binding)
+  
 
-  (println
-   :next
-   (next! data-binding))
-
-
-
-  (println
-   :wip
-   (float-pointer (mutable-data (first (bound-values data-binding)))))
-
-  (let [logits-vec
-        (v/array-vec
-         (pointer-vec (capacity! (float-pointer (mutable-data (first (bound-values data-binding))))
-                                 (* len-input 262144))))
-        last-logit
-        (v/array-vec
-         (last
-          (partition 262144 logits-vec)))
-        first-five (v/array-vec (take 5 last-logit))
-        last-five (v/array-vec (take-last 5 last-logit))]
+    (let [logits-vec
+                 (v/array-vec
+                  (pointer-vec (capacity! (float-pointer (mutable-data (first (bound-values data-binding))))
+                                          (* len-input 262144))))
+                 last-logit
+                 (v/array-vec
+                  (last
+                   (partition 262144 logits-vec)))
+                 first-five (v/array-vec (take 5 last-logit))
+                 last-five (v/array-vec (take-last 5 last-logit))]
 
     (println :logits-vec (take 10 logits-vec))
 
