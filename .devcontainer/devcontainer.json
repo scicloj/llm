@@ -30,7 +30,8 @@
 		"vscode": {
 			"extensions": [
 				"betterthantomorrow.calva",
-				"ms-python.python"
+				"ms-python.python",
+				"betterthantomorrow.calva-power-tools"
 			]
 		}
 	},
