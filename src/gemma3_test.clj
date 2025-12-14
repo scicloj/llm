@@ -12,6 +12,7 @@
 
 
 
+
 (with-release [env (environment :warning "test" nil)
                opt (-> (options)
                        (append-provider! :cuda)
@@ -36,4 +37,9 @@
   (next! data-binding)
   (println
    (apply +
-    (pointer-vec (capacity! (float-pointer (mutable-data (first (bound-values data-binding)))) 262144)))))
+    (pointer-vec (capacity! (float-pointer (mutable-data (first (bound-values data-binding)))) 262144))))
+  (next! data-binding)
+  (println
+   (apply +
+          (pointer-vec (capacity! (float-pointer (mutable-data (first (bound-values data-binding)))) 262144))))
+  )

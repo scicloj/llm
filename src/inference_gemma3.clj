@@ -11,21 +11,12 @@
   (:import
    [ai.djl.huggingface.tokenizers HuggingFaceTokenizer]))
 
-;(def model-base-dir "/media/xfs/hf-models")
-
-
-(def num-key-value-heads 1)
-
-(def head-dim 256)
-(def num-hidden-layers 26)
-
-(defn- ->last-token-id [data-binding sequence_length]
+(defn- ->last-token-id [data-binding sequence_length model-config]
   (let [logits-vec
         (v/array-vec
          (pointer-vec (capacity! (float-pointer (mutable-data (first (bound-values data-binding))))
-                                 (* sequence_length 262144))))
-        logits (partition 262144 logits-vec)
-
+                                 (* sequence_length (:vocab-size model-config)))))
+        logits (partition (:vocab-size model-config) logits-vec)
         last-logit
         (v/array-vec
          (last logits))]
@@ -47,32 +38,35 @@
 
     (v/maxdim last-logit)))
 
-(defn infer! [sess mem-info  input-ids batch-size]
+(defn infer! [sess mem-info  input-ids batch-size model-config]
   (with-release [sequence_length (count (first input-ids))
 
                  past-key-values
                  (into {}
-                       (for [layer (range num-hidden-layers)
+                       (for [layer (range (:num-hidden-layers model-config))
                              kv ["key" "value"]]
                          [(format "past_key_values.%s.%s" layer kv)
-                          (onnxrt-internal/onnx-tensor mem-info [batch-size num-key-value-heads 0 head-dim]
+                          (onnxrt-internal/onnx-tensor mem-info [batch-size
+                                                                 (:num-key-value-heads model-config)
+                                                                 0
+                                                                 (:head-dim model-config)]
                                                        (zero! (float-pointer 0)))]))
 
 
                  present-key-values
                  (into {}
-                       (for [layer (range  num-hidden-layers)
+                       (for [layer (range  (:num-hidden-layers model-config))
                              kv ["key" "value"]]
                          [(format "present.%s.%s" layer kv)
                           (onnxrt-internal/onnx-tensor mem-info [batch-size
-                                                                 num-key-value-heads
+                                                                 (:num-key-value-heads model-config)
                                                                  sequence_length
-                                                                 head-dim]
+                                                                 (:head-dim model-config)]
                                                        (zero! (float-pointer
                                                                (* batch-size
-                                                                  num-key-value-heads
+                                                                  (:num-key-value-heads model-config)
                                                                   sequence_length
-                                                                  head-dim))))]))
+                                                                  (:head-dim model-config)))))]))
                  position-ids (range 1 (inc sequence_length))
                  in-binding
                  (assoc past-key-values
@@ -90,34 +84,43 @@
                  (assoc present-key-values
                         "logits" (onnxrt-internal/onnx-tensor
                                   mem-info
-                                  [1 sequence_length 262144]
-                                  (float-pointer (* sequence_length 262144))))
+                                  [1 sequence_length (:vocab-size model-config)]
+                                  (float-pointer (* sequence_length (:vocab-size model-config)))))
 
 
                  data-binding
                  (onnxrt-internal/io-binding sess in-binding out-binding)
-
-
                  next! (onnxrt-internal/runner* sess)]
 
 
     (next! data-binding)
-
-
-    (->last-token-id data-binding sequence_length)))
+    (->last-token-id data-binding sequence_length model-config)))
 
 
 
-(defn generate [ort-session mem-info initial-input-ids batch-size next-token-callback]
-  (reduce
-   (fn [accum _]
-     (let [next-token (infer! ort-session mem-info (:input-ids accum) batch-size)]
-       (next-token-callback {:token-id next-token})
-       {:input-ids [(conj (first (:input-ids accum)) next-token)]
-        :generated-tokens (conj (:generated-tokens accum) next-token)}))
-   {:input-ids initial-input-ids
-    :generated-tokens []}
-   (range 50)))
+(defn generate [ort-session
+                mem-info
+                initial-input-ids
+                batch-size
+                next-token-callback
+                model-config
+                max-tokens]
+  (loop [token-count 0
+         accum
+         {:input-ids initial-input-ids
+          :generated-tokens []}]
+    (when (and
+           (< token-count max-tokens)
+           (not (contains? (into #{} (:eos-token-ids model-config))
+                           (last (:generated-tokens accum)))))
+      (let [next-token (infer! ort-session mem-info (:input-ids accum)
+                               batch-size
+                               model-config)]
+        (next-token-callback {:token-id next-token})
+        (recur
+         (inc token-count)
+         {:input-ids [(conj (first (:input-ids accum)) next-token)]
+          :generated-tokens (conj (:generated-tokens accum) next-token)})))))
 
 
 (def model-base-dir  "/hf-models")
@@ -128,11 +131,24 @@
       java.nio.file.Path/of
       HuggingFaceTokenizer/newInstance))
 
+(-> (.encode tokenizer "<bos><start_of_turn>user\nYou are a helpful assistant.\n\nWrite me a poem about Machine Learning.<end_of_turn>\n<start_of_turn>model\n")
+    .getIds
+    vec
+    vector)
 
-(def initial-input-ids [[2    105   2364    107   3048    659    496  11045  16326 236761
-                         108   6974    786    496  27355   1003  15313  19180 236761    106
-                         107    105   4368    107]])
+; "<bos><start_of_turn>user\nYou are a helpful assistant.\n\nWrite me a poem about Machine Learning.<end_of_turn>\n<start_of_turn>model\n"
+;; (def initial-input-ids [[2    105   2364    107   3048    659    496  11045  16326 236761
+;;                          108   6974    786    496  27355   1003  15313  19180 236761    106
+;;                          107    105   4368    107]])
+(def initial-input-ids 
+  (-> (.encode tokenizer "<bos><start_of_turn>user\nYou are a helpful assistant.\n\nWrite me a poem about Machine Learning.<end_of_turn>\n<start_of_turn>model\n")
+      .getIds
+      vec
+      vector))
+
 (def batch-size 1)
+(def max-tokens 10)
+(.decode tokenizer (long-array (first initial-input-ids)))
 
 (with-release [mem-info (onnxrt-internal/memory-info :cpu :arena 0 :default)
                env (onnxrt-internal/environment :warning "test" nil)
@@ -142,13 +158,32 @@
   (generate sess mem-info initial-input-ids batch-size
             (fn [next-token-info]
               (print (.decode tokenizer (long-array [(:token-id next-token-info)])))
-              (flush))))
+              (flush))
+            ;;from https://huggingface.co/onnx-community/gemma-3-1b-it-ONNX/resolve/main/config.json
+            {:num-key-value-heads 1
+             :num-hidden-layers 26
+             :head-dim 256
+             :vocab-size 262144
+             :eos-token-ids [1 106]}
+            max-tokens)
+  (println))
 
 
 
-;
-;; (println
-;;  (.decode tokenizer (long-array @generated-tokens)))
+
+(comment
+  (def mem-info (onnxrt-internal/memory-info :cpu :arena 0 :default))
+
+  (def env (onnxrt-internal/environment :warning "test" nil))
+
+  (def opt (-> (onnxrt-internal/options)
+               (onnxrt-internal/append-provider! :dnnl)))
+
+  (def sess (onnxrt-internal/session env (format "%s/%s/onnx/model.onnx" model-base-dir model-name) opt))
+
+
+  (-> sess onnxrt-internal/output-type-info))
+
 
 
 (comment
