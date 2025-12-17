@@ -18,12 +18,18 @@
    ))
 
 (def resp
-  (let [fact (dnnl-factory)
+  (let [batch-size 1
+        past-sequence-length 0
+        sequence-length 1
+        num-key-value-heads 1
+        head-dim 256
+
+        fact (dnnl-factory)
         neand-fact (neanderthal-factory fact)]
     (with-release [opt (-> (options)
-                           (override-dimension! "batch_size" 1)
-                           (override-dimension! "sequence_length" 1)
-                           (override-dimension! "past_sequence_length" 1)
+                           (override-dimension! "batch_size" batch-size)
+                           (override-dimension! "sequence_length" sequence-length)
+                           (override-dimension! "past_sequence_length" past-sequence-length)
                          ;(override-dimension! "past_sequence_length + 256" 1)
                          ;(onnxrt-internal/append-provider! :cuda)
                            ;(override-dimension! "past_sequence_length" 0)
@@ -32,10 +38,12 @@
                    onnx-bp (onnx fact "/hf-models/onnx-community/gemma-3-1b-it-ONNX/onnx/model.onnx" {:options opt})
                    _ (println (-> onnx-bp  info :src))
                    _ (println (-> onnx-bp  info :dst))
-                   input-ids (tensor neand-fact [1 1] :long :nc)
-                   position-ids (tensor neand-fact [1 1] :long :nc)
-                   ;attention-mask (tensor neand-fact [1 1] :long :nc)
-                   past-key-values (repeatedly 52 #(tensor fact [1 1 1 256] :float :nchw))
+                   input-ids (tensor neand-fact [1 sequence-length] :long :nc)
+                   position-ids (tensor neand-fact [1 sequence-length] :long :nc)
+                   past-key-values (repeatedly 52 #(tensor fact [batch-size 
+                                                                 num-key-value-heads 
+                                                                 past-sequence-length 
+                                                                 head-dim] :float :nchw))
                    smollm-next! (onnx-bp (into [input-ids  position-ids] past-key-values))
                    logits (float-array 262144)
                    ]
