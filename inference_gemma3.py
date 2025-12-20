@@ -25,6 +25,9 @@ messages = [
 #load model
 decoder_session = onnxruntime.InferenceSession(f"{path_to_model}/onnx/model.onnx")
 
+decoder_session.get_inputs()[2].shape
+
+
 ## Apply tokenizer
 inputs = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=True, return_dict=True, return_tensors="np")
 

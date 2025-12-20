@@ -22,9 +22,11 @@ for i in range(30):
 a=ort_sess.run(["logits"], tokens)
 tokenizer.decode(np.argmax(a[0][0],axis=1),)
 
+
+
 from transformers import AutoModelForCausalLM, AutoTokenizer
 model = AutoModelForCausalLM.from_pretrained("/hf-models/HuggingFaceTB/SmolLM-135M")
 inputs = dict(tokenizer("Tell me a story about the hobbits", return_tensors="pt"))
-outputs = model.generate(**inputs)
+outputs = model.generate(**inputs,max_new_tokens = 100)
 print(tokenizer.decode(outputs[0]))
 

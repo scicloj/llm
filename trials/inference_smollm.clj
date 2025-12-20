@@ -207,7 +207,7 @@
 
 
 (do
-  (let [answer (generate "Tell me a story about the hobbits.\n" 10
+  (let [answer (generate "Tell me a story about the hobbits.\n" 100
                          (fn [prompt] (println prompt) (flush)))]
     (println)
     (println "------------------")

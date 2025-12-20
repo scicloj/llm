@@ -13,7 +13,8 @@
 	},
 	"containerEnv": {
        "UV_CACHE_DIR": "/uv_cache_dir",
-	   "HF_MODELS_FOLDER": "/hf-models"
+	   "HF_MODELS_FOLDER": "/hf-models",
+	   "LD_LIBRARY_PATH": "/home/vscode/.javacpp/cache/opencl-3.0-1.5.12-linux-x86_64.jar/org/bytedeco/opencl/linux-x86_64"
 
     },
 	"runArgs": 
