@@ -4,7 +4,7 @@
    [uncomplicate.commons [core :refer [with-release info]]]
    [uncomplicate.neanderthal.core :refer [iamax transfer! native view-vctr entry!]]
    [uncomplicate.diamond
-    [tensor :refer [tensor output]]
+    [tensor :refer [tensor output *diamond-factory*]]
     [onnxrt :refer [onnx]]]
    [uncomplicate.diamond.internal.protocols :refer [neanderthal-factory]]
    [uncomplicate.diamond.internal.onnxrt
@@ -23,7 +23,7 @@
          108   6974    786    496  27355   1003  15313  19180 236761    106
          107    105   4368    107]
         batch-size 1
-        past-sequence-length 0
+        past-sequence-length 1
         sequence-length (count input-tokens)
         num-key-value-heads 1
         head-dim 256
@@ -53,28 +53,18 @@
 
 
 
-(comment 
-  (println :cudnn-factory...)
-  ;; not working
-  ;; throws cuDNN error: :bad-param.
-  (init)
-  
-  (uncomplicate.diamond.internal.onnxrt.core/init-ort-api!)
-  
-  (uncomplicate.clojurecuda.core/init)
-  
 
-  (with-release [dev (device 0)]
-    (with-context (context dev :map-host )
-      (let [fact (cudnn-factory)]
-        (println
-         (->> (generate fact "/hf-models/onnx-community/gemma-3-1b-it-ONNX-GQA/onnx/model.onnx")
-              (partition 262144)
-              last
-              v/array-vec
-              v/maxdim)))))
-  )
-
+(println :cudnn-factory...)
+(try
+  (let [fact (cudnn-factory)]
+    (println
+     (->> (generate fact "/hf-models/onnx-community/gemma-3-1b-it-ONNX/onnx/model.onnx")
+          (partition 262144)
+          last
+          v/array-vec
+          v/maxdim)))
+  (catch Exception e
+    (println "cudnn failed: " e)))
 
 
 (println :dnnl-factory...)
