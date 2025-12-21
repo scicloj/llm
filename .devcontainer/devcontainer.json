@@ -13,13 +13,14 @@
 	},
 	"containerEnv": {
        "UV_CACHE_DIR": "/uv_cache_dir",
-	   "HF_MODELS_FOLDER": "/hf-models",
-	   "LD_LIBRARY_PATH": "/home/vscode/.javacpp/cache/opencl-3.0-1.5.12-linux-x86_64.jar/org/bytedeco/opencl/linux-x86_64"
+	   "HF_MODELS_FOLDER": "/hf-models"
+	   // not working
+	   //"LD_LIBRARY_PATH": "/home/vscode/.javacpp/cache/opencl-3.0-1.5.12-linux-x86_64.jar/org/bytedeco/opencl/linux-x86_64"
 
     },
 	"runArgs": 
 	    [ 
-		//"--device", "nvidia.com/gpu=all"   // working on nixos
+		//"--device", "nvidia.com/gpu=all"   // working on nixosr
 		"--runtime=nvidia", "--gpus", "all"] //working in codevm
 		],
 		
