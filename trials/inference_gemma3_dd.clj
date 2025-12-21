@@ -4,14 +4,17 @@
    [uncomplicate.commons [core :refer [with-release info]]]
    [uncomplicate.diamond
     [tensor :refer [tensor shape desc]]
-    [onnxrt :refer [onnx]]]
+    [onnxrt :refer [onnx *onnx-options*]]]
    [uncomplicate.diamond.internal.cudnn.factory :refer [cudnn-factory]]
    [uncomplicate.diamond.internal.dnnl.factory :refer [dnnl-factory]]
    [uncomplicate.diamond.internal.onnxrt
     [core :refer [options override-dimension!]]]
    [uncomplicate.diamond.internal.protocols :refer [neanderthal-factory]]
    [uncomplicate.neanderthal.core :refer [native transfer! view-vctr]]
-   [fastmath.vector :as v]))
+   [fastmath.vector :as v]
+   ;:reload-all
+   ))
+
 ;; need to find "somehow" the OpenCL native libraries
 ;; ex:
 ;; LD_LIBRARY_PATH=~/.javacpp/cache/opencl-3.0-1.5.12-linux-x86_64.jar/org/bytedeco/opencl/linux-x86_64
@@ -44,7 +47,7 @@
                                                                   (:past-sequence-length config)
                                                                   (:head-dim config)]
                                                             :float :nchw))
-                   _ (println :past-kv-tz--info (desc (first past-key-values-tzs)))
+                   ;_ (println :past-kv-tz--info (desc (first past-key-values-tzs)))
 
                    inputs-tzs (if (:use-attention-mask? config)
                                 (into [input-ids-tz attention-mask-tz position-ids-tz] past-key-values-tzs)
@@ -71,7 +74,7 @@
       logits)))
 
 
-(defn infer! [fact model-path input-ids config session-opts]
+(defn infer [fact model-path input-ids config session-opts]
   (try
     (let [next-token
           (->> (generate fact model-path input-ids config session-opts)
@@ -79,17 +82,27 @@
                last
                v/array-vec
                v/maxdim)]
-      (println (format "%s : %s " fact next-token)))
-    (catch Exception e
-      (println e)
-      (println (format "infer failed failed for %s : \n %s" fact e)))))
+      ;(println (format "%s : %s " fact next-token))
+      next-token)
 
+    (catch Exception e
+      (println (format "infer failed failed for %s : \n %s" fact e))
+      "error"
+      ;(println e)
+      )))
+(def my-onnx-options
+  (assoc *onnx-options* :cuda {}))
+
+(comment)
+
+
+ 
 (let [input-ids
       [2    105   2364    107   3048    659    496  11045  16326 236761
        108   6974    786    496  27355   1003  15313  19180 236761    106
        107    105   4368    107]
       ; next is 19508
-      past-sequence-length 1
+      past-sequence-length 3
       config
       {:batch-size 1
        :past-sequence-length past-sequence-length
@@ -103,37 +116,77 @@
                        (override-dimension! "sequence_length" (count input-ids))
                        (override-dimension! "past_sequence_length" past-sequence-length))
 
-      
+
       model-path "/hf-models/onnx-community/gemma-3-1b-it-ONNX/onnx/model.onnx"]
 
-  (infer! (cudnn-factory) model-path input-ids config session-opts)
-  (infer! (dnnl-factory) model-path input-ids config session-opts))
+  (println :gpu (infer (cudnn-factory) model-path input-ids config session-opts))
+  (println :cpu (infer (dnnl-factory) model-path input-ids config session-opts)))
+  
+  
 
+  (comment)
+    
+  
+  (let [input-ids [31530 549 253 1977 563 260 11127 9229 30]
+        ;> 198 expected
+        len-input (count input-ids)
 
-(let [input-ids [31530]
-      len-input (count input-ids)
+        config
+        {:batch-size 1
+         :past-sequence-length 0
+         :num-key-value-heads 3
+         :head-dim 64
+         :num-hidden-layers 30
+         :vocab-size 49152
+         :use-attention-mask? true}
+        model-path "/hf-models/HuggingFaceTB/SmolLM-135M/onnx/model.onnx"
+        session-opts (-> (options)
+                         (override-dimension! "batch_size" 1)
+                         (override-dimension! "sequence_length" len-input)
+                         (override-dimension! "past_sequence_length" 0)
+                         (override-dimension! "past_sequence_length + 1" len-input))]
 
-      config
-      {:batch-size 1
-       :past-sequence-length 1
-       :num-key-value-heads 3
-       :head-dim 64
-       :num-hidden-layers 30
-       :vocab-size 49152
-       :use-attention-mask? true
-       }
-      model-path "/hf-models/HuggingFaceTB/SmolLM-135M/onnx/model.onnx"
-      session-opts (-> (options)
-                       (override-dimension! "batch_size" 1)
-                       (override-dimension! "sequence_length" (count input-ids))
-                       (override-dimension! "past_sequence_length" 1)
-                       (override-dimension! "past_sequence_length + 1" 1))]
+    (println :cuda (infer (cudnn-factory) model-path input-ids config session-opts))
+    (println :cpu (infer (dnnl-factory) model-path input-ids config session-opts))
+)
+  
 
-  (infer! (cudnn-factory) model-path input-ids config session-opts)
-  (infer! (dnnl-factory) model-path input-ids config session-opts))
+(comment
 
+  (defn try-it! [fact input-ids a b c d]
+    (let [;input-ids [31530]
+      ;,   549,   253,  1977,   563,   260, 11127,  9229,    30
+      ; next is 198
+          config
+          {:batch-size 1
+           :past-sequence-length a
+           :num-key-value-heads 3
+           :head-dim 64
+           :num-hidden-layers 30
+           :vocab-size 49152
+           :use-attention-mask? true}
+          model-path "/hf-models/HuggingFaceTB/SmolLM-135M/onnx/model.onnx"
+          session-opts (-> (options)
+                           (override-dimension! "batch_size" 1)
+                           (override-dimension! "sequence_length" b)
+                           (override-dimension! "past_sequence_length" c)
+                           (override-dimension! "past_sequence_length + 1" d))]
 
+      (infer fact model-path input-ids config session-opts)))
 
-
+  (doall
+   (for [fact [(dnnl-factory)
+             ;(cudnn-factory)
+               ]
+         ids [;[31530] 
+              [31530 643]]
+         a (range 3)
+         b (range 3)
+         c (range 3)
+         d (range 3)]
+     (let [result
+           (try-it! fact ids a b c d)]
+       (println (format "%s %s - %s %s %s %s : %s" fact ids a b c d result)))))
+  )
 
 ; LD_LIBRARY_PATH=/home/vscode/.javacpp/cache/opencl-3.0-1.5.12-linux-x86_64.jar/org/bytedeco/opencl/linux-x86_64/  java -jar /home/vscode/.vscode-server/extensions/betterthantomorrow.calva-2.0.542/deps.clj.jar -Sdeps '{:deps {nrepl/nrepl {:mvn/version,"1.5.1"},cider/cider-nrepl {:mvn/version,"0.58.0"}}}' -M:linux -m nrepl.cmdline --middleware "[cider.nrepl/cider-middleware]"

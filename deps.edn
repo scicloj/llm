@@ -1,16 +1,16 @@
 {; probbaly only supports Linux on CPU
  :deps {org.clojure/clojure {:mvn/version "1.12.2"}
-         org.scicloj/noj {:mvn/version "2-beta18"}
-         org.uncomplicate/diamond-onnxrt {:mvn/version "0.21.0"}
-         org.bytedeco/onnxruntime-platform-gpu {:mvn/version "1.23.2-1.5.13-20251201.110731-1"}
-         org.uncomplicate/deep-diamond-dnnl {:mvn/version "0.42.0"}
-         org.uncomplicate/deep-diamond-cuda {:mvn/version "0.42.0"}
-         org.uncomplicate/deep-diamond-base {:mvn/version "0.42.0"}
-         org.uncomplicate/neanderthal-mkl {:mvn/version "0.60.0"}
-         org.bytedeco/cuda-redist$linux-x86_64 {:mvn/version "13.0-9.14-1.5.13-20251022.164318-20"}
-         org.bytedeco/cuda-redist-cublas$linux-x86_64 {:mvn/version "13.0-9.14-1.5.13-20251022.164348-20"}
-         org.bytedeco/cuda-redist-cudnn$linux-x86_64 {:mvn/version "13.0-9.14-1.5.13-20251022.164345-20"} 
-         org.bytedeco/mkl$linux-x86_64-redist { :mvn/version "2025.2-1.5.12"} 
+        org.scicloj/noj {:mvn/version "2-beta18"}
+        org.uncomplicate/diamond-onnxrt {:mvn/version "0.21.0"}
+        org.bytedeco/onnxruntime-platform-gpu {:mvn/version "1.23.2-1.5.13-20251201.110731-1"}
+        org.uncomplicate/deep-diamond-dnnl {:mvn/version "0.42.0"}
+        org.uncomplicate/deep-diamond-cuda {:mvn/version "0.42.0"}
+        org.uncomplicate/deep-diamond-base {:mvn/version "0.42.0"}
+        org.uncomplicate/neanderthal-mkl {:mvn/version "0.60.0"}
+        org.bytedeco/cuda-redist$linux-x86_64 {:mvn/version "13.0-9.14-1.5.13-20251022.164318-20"}
+        org.bytedeco/cuda-redist-cublas$linux-x86_64 {:mvn/version "13.0-9.14-1.5.13-20251022.164348-20"}
+        org.bytedeco/cuda-redist-cudnn$linux-x86_64 {:mvn/version "13.0-9.14-1.5.13-20251022.164345-20"} 
+        org.bytedeco/mkl$linux-x86_64-redist { :mvn/version "2025.2-1.5.12"} 
         
         ;opencl
         org.uncomplicate/neanderthal-opencl {:mvn/version "0.60.0"}
@@ -27,7 +27,7 @@
         }
 
 
- :paths ["src" "notebooks" "classes" "resources"]
+ :paths ["src" "classes" "resources" "trials"]
  :mvn/repos {"maven-central-snapshots" {:url "https://central.sonatype.com/repository/maven-snapshots"
                                         :snapshots {:enabled true}}
              "nexus snapshots"         {:url "https://oss.sonatype.org/content/repositories/snapshots"
@@ -45,6 +45,7 @@
          :main-opts ["-m" "cognitect.test-runner"]
          :exec-fn cognitect.test-runner.api/test}
   :linux
-  {:jvm-opts ["-Dclojure.compiler.direct-linking=true" 
+  {:jvm-opts [
+              ;"-Dclojure.compiler.direct-linking=true" 
               "--enable-native-access=ALL-UNNAMED"
               "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"]}}}
