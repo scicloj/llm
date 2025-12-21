@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = "==3.13.*"
 dependencies = [
-    "onnxruntime==1.23.2",
+    "onnxruntime-gpu[cuda,cudnn]==1.23.2",
     "onnxruntime-extensions>=0.14.0",
     "transformers>=4.57.1",
     "tiktoken==0.12.0",
