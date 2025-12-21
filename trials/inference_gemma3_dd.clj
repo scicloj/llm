@@ -44,7 +44,7 @@
                                                                   (:past-sequence-length config)
                                                                   (:head-dim config)]
                                                             :float :nchw))
-                   ;_ (println :past-kv-tz--info (desc (first past-key-values-tzs)))
+                   _ (println :past-kv-tz--info (desc (first past-key-values-tzs)))
 
                    inputs-tzs (if (:use-attention-mask? config)
                                 (into [input-ids-tz attention-mask-tz position-ids-tz] past-key-values-tzs)
@@ -88,8 +88,8 @@
       [2    105   2364    107   3048    659    496  11045  16326 236761
        108   6974    786    496  27355   1003  15313  19180 236761    106
        107    105   4368    107]
+      ; next is 19508
       past-sequence-length 1
-      sequence-length 1
       config
       {:batch-size 1
        :past-sequence-length past-sequence-length
@@ -110,7 +110,7 @@
   (infer! (dnnl-factory) model-path input-ids config session-opts))
 
 
-(let [input-ids [2]
+(let [input-ids [31530]
       len-input (count input-ids)
 
       config
@@ -121,15 +121,11 @@
        :num-hidden-layers 30
        :vocab-size 49152
        :use-attention-mask? true
-       :override-dimensions
-       ["batch_size" 1
-        "sequence_length"  len-input
-        "past_sequence_length" len-input]
-       "past_sequence_length + 1" len-input}
+       }
       model-path "/hf-models/HuggingFaceTB/SmolLM-135M/onnx/model.onnx"
       session-opts (-> (options)
                        (override-dimension! "batch_size" 1)
-                       (override-dimension! "sequence_length" 1)
+                       (override-dimension! "sequence_length" (count input-ids))
                        (override-dimension! "past_sequence_length" 1)
                        (override-dimension! "past_sequence_length + 1" 1))]
 
