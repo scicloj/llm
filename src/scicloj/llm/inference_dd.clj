@@ -1,32 +1,26 @@
 (ns
- inference-gemma3-dd
+ inference-dd
   (:require
-   [uncomplicate.commons [core :refer [with-release info]]]
+   [clojure.java.io :as io]
+   [fastmath.vector :as v] ;:reload-all
+   [uncomplicate.commons [core :refer [with-release]]]
    [uncomplicate.diamond
-    [tensor :refer [tensor shape desc]]
-    [onnxrt :refer [onnx *onnx-options*]]]
+    [tensor :refer [tensor]]
+    [onnxrt :refer [onnx]]]
    [uncomplicate.diamond.internal.cudnn.factory :refer [cudnn-factory]]
    [uncomplicate.diamond.internal.dnnl.factory :refer [dnnl-factory]]
    [uncomplicate.diamond.internal.onnxrt
-    [core :refer [options override-dimension!]]]
+    [core :refer [options options override-dimension!]]]
    [uncomplicate.diamond.internal.protocols :refer [neanderthal-factory]]
-   [uncomplicate.neanderthal.core :refer [native transfer! view-vctr]]
-   [fastmath.vector :as v]
-   ;:reload-all
-   ))
+   [uncomplicate.neanderthal.core :refer [native transfer!]])
+  (:import
+   [ai.djl.huggingface.tokenizers HuggingFaceTokenizer]))
 
+(def gemma-tokenizer (HuggingFaceTokenizer/newInstance (.toPath (io/file "/hf-models/onnx-community/gemma-3-1b-it-ONNX"))))
 ;; need to find "somehow" the OpenCL native libraries
 ;; ex:
 ;; LD_LIBRARY_PATH=~/.javacpp/cache/opencl-3.0-1.5.12-linux-x86_64.jar/org/bytedeco/opencl/linux-x86_64
 
-(defn- override-dimensions! [options config]
-  (reduce
-   (fn [opt [dim value]]
-     (override-dimension! opt dim value)
-     opt)
-   options
-   (partition 2
-              (:override-dimensions config))))
 
 
 (defn generate [fact onnx-file input-ids config session-opts]
@@ -90,43 +84,64 @@
       "error"
       ;(println e)
       )))
-(def my-onnx-options
-  (assoc *onnx-options* :cuda {}))
 
 (comment)
 
 
- 
-(let [input-ids
-      [2    105   2364    107   3048    659    496  11045  16326 236761
-       108   6974    786    496  27355   1003  15313  19180 236761    106
-       107    105   4368    107]
-      ; next is 19508
-      past-sequence-length 3
-      config
-      {:batch-size 1
-       :past-sequence-length past-sequence-length
-       :num-key-value-heads 1
-       :head-dim 256
-       :num-hidden-layers 26
-       :vocab-size 262144
-       :use-attention-mask? false}
-      session-opts (-> (options)
-                       (override-dimension! "batch_size" 1)
-                       (override-dimension! "sequence_length" (count input-ids))
-                       (override-dimension! "past_sequence_length" past-sequence-length))
+(defn infer-gemma-3-1b-it [factory input-ids]
+  (let [past-sequence-length 3
+        config
+        {:batch-size 1
+         :past-sequence-length past-sequence-length
+         :num-key-value-heads 1
+         :head-dim 256
+         :num-hidden-layers 26
+         :vocab-size 262144
+         :use-attention-mask? false}
+        session-opts (-> (options)
+                         (override-dimension! "batch_size" 1)
+                         (override-dimension! "sequence_length" (count input-ids))
+                         (override-dimension! "past_sequence_length" past-sequence-length))
 
 
-      model-path "/hf-models/onnx-community/gemma-3-1b-it-ONNX/onnx/model.onnx"]
+        model-path "/hf-models/onnx-community/gemma-3-1b-it-ONNX/onnx/model.onnx"]
 
-  (println :gpu (infer (cudnn-factory) model-path input-ids config session-opts))
-  (println :cpu (infer (dnnl-factory) model-path input-ids config session-opts)))
+
+    (infer factory model-path input-ids config session-opts)
+
+  ;(println :cpu (infer (dnnl-factory) model-path input-ids config session-opts))
+    ))
+
+(comment 
+  ; works, but very slow due to new session/blueprint creation for each token prediction
+
+  (def initital-input-ids
+    [2    105   2364    107   3048    659    496  11045  16326 236761
+     108   6974    786    496  27355   1003  15313  19180 236761    106
+     107    105   4368    107])
+  ;next is 19508
   
+
+  (def input-ids (atom initital-input-ids))
   
 
-  (comment)
-    
+  (add-watch input-ids :watcher
+             (fn [key atom old-state new-state]
+               (print
+                (.decode gemma-tokenizer (long-array (take-last 1 new-state))))
+               (flush)))
   
+  (def fact (cudnn-factory))
+  
+
+  (run!
+   (fn [_] (swap! input-ids conj (infer-gemma-3-1b-it fact @input-ids)))
+   (range 100))
+  )
+
+
+(comment
+  ;next token prediction from several works only for cpu
   (let [input-ids [31530 549 253 1977 563 260 11127 9229 30]
         ;> 198 expected
         len-input (count input-ids)
@@ -143,50 +158,15 @@
         session-opts (-> (options)
                          (override-dimension! "batch_size" 1)
                          (override-dimension! "sequence_length" len-input)
-                         (override-dimension! "past_sequence_length" 0)
+                         (override-dimension! "past_sequence_length" 0)  ;; maybe this is an issue on GPU ?
                          (override-dimension! "past_sequence_length + 1" len-input))]
 
-    (println :cuda (infer (cudnn-factory) model-path input-ids config session-opts))
+    ;fails: (println :cuda (infer (cudnn-factory) model-path input-ids config session-opts))
+    
     (println :cpu (infer (dnnl-factory) model-path input-ids config session-opts))
-)
+    ))
+
+
+
   
-
-(comment
-
-  (defn try-it! [fact input-ids a b c d]
-    (let [;input-ids [31530]
-      ;,   549,   253,  1977,   563,   260, 11127,  9229,    30
-      ; next is 198
-          config
-          {:batch-size 1
-           :past-sequence-length a
-           :num-key-value-heads 3
-           :head-dim 64
-           :num-hidden-layers 30
-           :vocab-size 49152
-           :use-attention-mask? true}
-          model-path "/hf-models/HuggingFaceTB/SmolLM-135M/onnx/model.onnx"
-          session-opts (-> (options)
-                           (override-dimension! "batch_size" 1)
-                           (override-dimension! "sequence_length" b)
-                           (override-dimension! "past_sequence_length" c)
-                           (override-dimension! "past_sequence_length + 1" d))]
-
-      (infer fact model-path input-ids config session-opts)))
-
-  (doall
-   (for [fact [(dnnl-factory)
-             ;(cudnn-factory)
-               ]
-         ids [;[31530] 
-              [31530 643]]
-         a (range 3)
-         b (range 3)
-         c (range 3)
-         d (range 3)]
-     (let [result
-           (try-it! fact ids a b c d)]
-       (println (format "%s %s - %s %s %s %s : %s" fact ids a b c d result)))))
-  )
-
 ; LD_LIBRARY_PATH=/home/vscode/.javacpp/cache/opencl-3.0-1.5.12-linux-x86_64.jar/org/bytedeco/opencl/linux-x86_64/  java -jar /home/vscode/.vscode-server/extensions/betterthantomorrow.calva-2.0.542/deps.clj.jar -Sdeps '{:deps {nrepl/nrepl {:mvn/version,"1.5.1"},cider/cider-nrepl {:mvn/version,"0.58.0"}}}' -M:linux -m nrepl.cmdline --middleware "[cider.nrepl/cider-middleware]"

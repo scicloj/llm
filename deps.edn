@@ -18,11 +18,7 @@
         org.bytedeco/opencl-platform {:mvn/version "3.0-1.5.12"}
 
 
-        ;;  io.github.clojure/tools.build {:mvn/version "0.10.11"}
-        ;;  org.json/json {:mvn/version "20250517"}
-        ;;  clj-http/clj-http {:mvn/version "3.13.1"}
-        ;;  ai.djl.huggingface/tokenizers {:mvn/version "0.34.0"}
-        ;;  generateme/fastmath {:mvn/version "3.0.0-alpha4"}
+        ai.djl.huggingface/tokenizers {:mvn/version "0.34.0"}
         
         }
 

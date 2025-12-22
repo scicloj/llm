@@ -7,14 +7,22 @@
    [uncomplicate.commons.core :as uc-co-core :refer [info with-release]]
    [uncomplicate.diamond.internal.onnxrt.core :refer [clear-bound-outputs bound-values mutable-data value] :as onnxrt-internal]
    [uncomplicate.diamond.native]
-   [fastmath.vector :as v])
+   [fastmath.vector :as v]
+   [clojure.java.io :as io]
+   
+   )
+  (:import
+   [ai.djl.huggingface.tokenizers HuggingFaceTokenizer])
   )
 
 (defn- ->last-token-id [data-binding sequence_length model-config]
+  
   (let [logits-vec
-        (v/array-vec
-         (pointer-vec (capacity! (float-pointer (mutable-data (first (bound-values data-binding))))
-                                 (* sequence_length (:vocab-size model-config)))))
+        (with-release [bound (first (bound-values data-binding))]
+          ;(println ": "  bound " -- " sequence_length)
+          (v/array-vec
+           (pointer-vec (capacity! (float-pointer (mutable-data bound))
+                                   (* sequence_length (:vocab-size model-config))))))  ; 24 ?
         logits (partition (:vocab-size model-config) logits-vec)
         last-logit
         (v/array-vec
@@ -24,17 +32,17 @@
     ;; (println :first-bound-value (count logits-vec))
     ;; (println first-five)
     ;; (println last-five)
-
+    
     ;; (assert (v/edelta-eq  (v/array-vec [-17.110178 , -11.298628 ,   1.2429764, -18.418331 ,  -4.9682384])
     ;;                       first-five
     ;;                       0.001)
     ;;         (str "unexpeced first-five: "  first-five))
-
+    
     ;; (assert (v/edelta-eq  (v/array-vec [-18.370398, -18.326473, -18.303009, -18.506184, -18.182766])
     ;;                       last-five
     ;;                       0.001)
     ;;         (str "unexpeced last-five: "  last-five))
-
+    
     (v/maxdim last-logit)))
 
 (defn- infer! [sess mem-info  input-ids batch-size model-config]
@@ -120,3 +128,42 @@
          (inc token-count)
          {:input-ids [(conj (first (:input-ids accum)) next-token)]
           :generated-tokens (conj (:generated-tokens accum) next-token)})))))
+
+(comment 
+  ; starts generating and after 10 or so crashes with
+;;   JRE version: OpenJDK Runtime Environment Temurin-25.0.1+8 (25.0.1+8) (build 25.0.1+8-LTS)
+;;   # Java VM: OpenJDK 64-Bit Server VM Temurin-25.0.1+8 (25.0.1+8-LTS, mixed mode, sharing, tiered, compressed oops, compressed class ptrs, g1 gc, linux-amd64)
+;;   # Problematic frame:
+;;   # C  [libjniOpenCL.so+0x56169]  Java_org_bytedeco_javacpp_FloatPointer_get__J+0x49
+;;   #
+  
+  (def gemma-tokenizer (HuggingFaceTokenizer/newInstance (.toPath (io/file "/hf-models/onnx-community/gemma-3-1b-it-ONNX"))))
+  
+
+  (with-release [options (-> (onnxrt-internal/options)
+                             (onnxrt-internal/append-provider! :cuda) 
+                             )
+                 ort-env (onnxrt-internal/environment nil)
+                 model-path "/hf-models/onnx-community/gemma-3-1b-it-ONNX/onnx/model.onnx"
+                 ort-session (onnxrt-internal/session ort-env model-path options)
+                 mem-info (onnxrt-internal/memory-info :cuda)
+                 input-ids
+                 [ [2    105   2364    107   3048    659    496  11045  16326 236761
+                    108   6974    786    496  27355   1003  15313  19180 236761    106
+                    107    105   4368    107]]
+                 model-config
+                 {:vocab-size 262144
+                  :eos-token-ids [106]
+                  :num-key-value-heads 1
+                  :head-dim 256
+                  :num-hidden-layers 26}]
+
+    (generate ort-session mem-info input-ids 1
+              (fn [{:keys [token-id]}]
+                (print
+                 (.decode gemma-tokenizer (long-array [token-id])))
+                (flush)
+                )
+              model-config
+              20))
+  )
