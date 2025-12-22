@@ -25,13 +25,15 @@ messages = [
 #load model
 decoder_session = onnxruntime.InferenceSession(f"{path_to_model}/onnx/model.onnx")
 
+decoder_session.get_inputs()[2].name
 decoder_session.get_inputs()[2].shape
 
-
+decoder_session.get_outputs()[0].name
+decoder_session.get_outputs()[0].shape
 ## Apply tokenizer
 inputs = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=True, return_dict=True, return_tensors="np")
 
-
+inputs
 
 
 ## Prepare decoder inputs
@@ -44,22 +46,22 @@ past_key_values = {
 input_ids = inputs['input_ids']
 position_ids = np.tile(np.arange(1, input_ids.shape[-1] + 1), (batch_size, 1))
 
+past_key_values["past_key_values.0.key"]
 # 3. Generation loop
-max_new_tokens = 1024
+max_new_tokens = 10
 generated_tokens = np.array([[]], dtype=np.int64)
-for i in range(20):
+for i in range(max_new_tokens):
 
   #print("shape past-key_values: " + str(past_key_values["past_key_values.0.key"].shape))
   
   logits, *present_key_values = decoder_session.run(None, dict(
       input_ids=input_ids,
       position_ids=position_ids,
-      **past_key_values,
+      **past_key_values))
 
-  ))
-
-  #print("shape present-key_values: " + str(present_key_values[0].shape))
-  #print("shape logits: " + str(logits.shape))
+  #print("before: shape present-key_values: " + str(present_key_values[0].shape) + " --- " +
+  #      "shape past-key_values: " + str(past_key_values['past_key_values.0.key'].shape)      )
+  print("shape logits: " + str(logits.shape))
 
   
   ## Update values for next generation loop
@@ -70,16 +72,20 @@ for i in range(20):
   for j, key in enumerate(past_key_values):
     past_key_values[key] = present_key_values[j]
 
+  print("after: shape present-key_values: " + str(present_key_values[0].shape) + " --- " +
+        "shape past-key_values: " + str(past_key_values['past_key_values.0.key'].shape)
+        )
+
   generated_tokens = np.concatenate([generated_tokens, input_ids], axis=-1)
   if (input_ids == eos_token_id).all():
     break
 
   ## (Optional) Streaming
-  print(tokenizer.decode(input_ids[0]), end='', flush=True)
+  #print(tokenizer.decode(input_ids[0]), end='', flush=True)
   #
   
 # 4. Output result
-#print(tokenizer.batch_decode(generated_tokens))
+print(tokenizer.batch_decode(generated_tokens)[0])
 
 
 #print(tokenizer.decode(np.transpose(logits[:].argmax(-1, keepdims=True)[0])[0]))

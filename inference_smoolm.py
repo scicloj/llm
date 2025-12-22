@@ -75,5 +75,7 @@ for i in range(max_new_tokens):
 #print(tokenizer.batch_decode(generated_tokens))
 
 
+[x for x in enumerate(past_key_values)]
+
 #print(tokenizer.decode(np.transpose(logits[:].argmax(-1, keepdims=True)[0])[0]))
 
